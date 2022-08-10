@@ -1,5 +1,11 @@
 ---
 
+- name: Install rpm package if we have one
+  package:
+    name: "{{ nexus_rpm_package }}"
+    disable_gpg_check: true
+  when: nexus_rpm_package | default('') | length
+
 - name: Set detection method to fixed if we have a var
   set_fact:
     nexus_version_detected_from: fixed
@@ -102,6 +108,7 @@
     src: "{{ nexus_download_dir }}/{{ nexus_package }}"
     dest: "{{ nexus_installation_dir }}"
     creates: "{{ nexus_installation_dir }}/nexus-{{ nexus_version }}"
+    force: no
     copy: false
     mode: 0755
   notify:
@@ -332,9 +339,52 @@
     - nexus-service-stop
   when: nexus_version is version_compare('3.21.2', '>=')
 
-- name: Create systemd service configuration
+- name: Create temporary dir for systemd service configuration
+  tempfile:
+    state: directory
+    suffix: build
+  register: tmpdir
+  changed_when: false
+  when: "ansible_service_mgr == 'systemd'"
+
+- name: Create systemd service configuration in "{{ tmpdir.path }}"
   template:
     src: "nexus.service"
+    dest: "{{ tmpdir.path }}/{{ nexus_service }}"
+  changed_when: false
+  when: "ansible_service_mgr == 'systemd'"
+
+- name: Get stat for new systemd service configuration
+  stat:
+    path: "{{ tmpdir.path }}/{{ nexus_service }}"
+  register: stat_result1
+  when: "ansible_service_mgr == 'systemd'"
+
+- name: Check if there is a standard systemd service configuration
+  stat:
+    path: "/usr/lib/systemd/system/'{{ nexus_service }}'"
+  register: stat_result2
+  when: "ansible_service_mgr == 'systemd'"
+
+- name: Install new systemd service configuration
+  copy:
+    remote_src: True
+    src: "{{ tmpdir.path }}/{{ nexus_service }}"
+    dest: "/etc/systemd/system/{{ nexus_service }}"
+  when: "ansible_service_mgr == 'systemd' and stat_result1.stat.checksum != stat_result2.stat.checksum|d('')"
+  notify:
+    - systemd-reload
+
+- name: Remove temporary file
+  file:
+    path: "{{ tmpdir.path }}/{{ nexus_service }}"
+    state: absent
+  changed_when: false
+  when: "ansible_service_mgr == 'systemd'"
+
+- name: Create systemd service configuration
+  template:
+    src: "'{{ nexus_service }}'"
     dest: "/etc/systemd/system"
     mode: 0644
   notify:
@@ -349,6 +399,11 @@
   when: "ansible_service_mgr != 'systemd'"
 
 - block:
+    - name: Ensure etc/scripts directory
+      file:
+        path: "{{ nexus_script_dir }}"
+        state: directory
+        mode: 0755
     - name: "Deploy backup restore script"
       template:
         src: "nexus-blob-restore.sh.j2"
@@ -380,7 +435,7 @@
 
 - name: Enable nexus systemd service and make sure it is started
   systemd:
-    name: nexus.service
+    name: '{{ nexus_service }}'
     enabled: yes
     state: started
     no_block: yes
@@ -522,6 +577,11 @@
     mode: 0644
   run_once: true
   delegate_to: localhost
+
+- name: Install rsync
+  package:
+    name: rsync
+    state: present
 
 - name: Upload new scripts
   unarchive:

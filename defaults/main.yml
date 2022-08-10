@@ -20,6 +20,8 @@ nexus_script_dir: '{{ nexus_installation_dir }}/nexus-{{ nexus_version }}/etc/sc
 nexus_plugin_urls: []
 nexus_onboarding_wizard: false
 
+nexus_service: nexus.service
+
 # These are the default values for JVM Ram
 # don't touch those unless you have read
 # https://help.sonatype.com/repomanager3/system-requirements#SystemRequirements-Memory
@@ -58,7 +60,7 @@ nexus_docker_hosted_port: 9080
 nexus_docker_proxy_port: 9081
 nexus_docker_group_port: 9082
 nexus_default_context_path: '/'
-nexus_application_host: '{{ httpd_setup_enable | ternary("127.0.0.1", "0.0.0.0") }}'
+nexus_application_host: '{{ nexus_httpd_setup_enable | ternary("127.0.0.1", "0.0.0.0") }}'
 
 # Nexus default admin password on first time install.
 # This should not be set in your playbook.
@@ -112,21 +114,21 @@ nexus_email_trust_store_enabled: false
 nexus_branding_header: ""
 nexus_branding_footer: "Last provisionned {{ ansible_date_time.iso8601 }}"
 
-httpd_setup_enable: false
-httpd_server_name: "{{ nexus_public_hostname }}"
-httpd_default_admin_email: "admin@example.com"
-httpd_ssl_certificate_file: 'files/nexus.vm.crt'
-httpd_ssl_certificate_key_file: 'files/nexus.vm.key'
-# httpd_ssl_certificate_chain_file: "{{ httpd_ssl_certificate_file }}"
-# If httpd_copy_ssl_files is false you need to provide the following variables:
-# - httpd_ssl_cert_file_location
-# - httpd_ssl_cert_key_location
-# - httpd_ssl_cert_chain_file_location <= optionnal. Leave unset if none
-httpd_copy_ssl_files: true
+nexus_httpd_setup_enable: false
+nexus_httpd_server_name: "{{ nexus_public_hostname }}"
+nexus_httpd_default_admin_email: "admin@example.com"
+nexus_httpd_ssl_certificate_file: 'files/nexus.vm.crt'
+nexus_httpd_ssl_certificate_key_file: 'files/nexus.vm.key'
+# httpd_ssl_certificate_chain_file: "{{ nexus_httpd_ssl_certificate_file }}"
+# If nexus_httpd_copy_ssl_files is false you need to provide the following variables:
+# - nexus_httpd_ssl_cert_file_location
+# - nexus_httpd_ssl_cert_key_location
+# - nexus_httpd_ssl_cert_chain_file_location <= optionnal. Leave unset if none
+nexus_httpd_copy_ssl_files: true
 # These specifies to the vhost file where to find on the remote file system the certificates files.
-httpd_ssl_cert_file_location: "/etc/pki/tls/certs/nexus.vm.crt"
-httpd_ssl_cert_key_location: "/etc/pki/tls/private/nexus.vm.key"
-# httpd_ssl_cert_chain_file_location: "{{ httpd_ssl_cert_file_location }}"
+nexus_httpd_ssl_cert_file_location: "/etc/pki/tls/certs/nexus.vm.crt"
+nexus_httpd_ssl_cert_key_location: "/etc/pki/tls/private/nexus.vm.key"
+# nexus_httpd_ssl_cert_chain_file_location: "{{ nexus_httpd_ssl_cert_file_location }}"
 
 ldap_connections: []
 # example ldap config :
@@ -167,7 +169,7 @@ nexus_proxy_exclude_hosts:
   - "127.*"
   - "[::1]"
 
-nexus_config_maven: true
+nexus_config_maven: false
 nexus_config_pypi: false
 nexus_config_docker: false
 nexus_config_raw: false

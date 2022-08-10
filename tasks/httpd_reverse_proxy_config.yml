@@ -14,18 +14,18 @@
     src: "{{ item }}"
     dest: "{{ certificate_file_dest }}"
     mode: 0600
-  when: (httpd_copy_ssl_files | bool) and (item | length > 0)
+  when: (nexus_httpd_copy_ssl_files | bool) and (item | length > 0)
   notify:
     - httpd-service-reload
     - wait-for-httpd
-  loop: "{{ [httpd_ssl_certificate_file] + [httpd_ssl_certificate_chain_file | default()] | unique }}"
+  loop: "{{ [nexus_httpd_ssl_certificate_file] + [httpd_ssl_certificate_chain_file | default()] | unique }}"
 
 - name: Copy SSL certificate key file
   copy:
-    src: "{{ httpd_ssl_certificate_key_file }}"
+    src: "{{ nexus_httpd_ssl_certificate_key_file }}"
     dest: "{{ certificate_key_dest }}"
     mode: 0600
-  when: httpd_copy_ssl_files | bool
+  when: nexus_httpd_copy_ssl_files | bool
   notify:
     - httpd-service-reload
     - wait-for-httpd

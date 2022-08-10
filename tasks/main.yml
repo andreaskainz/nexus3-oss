@@ -30,7 +30,7 @@
 - import_tasks: nexus_install.yml
 
 - include_tasks: httpd_reverse_proxy_config.yml
-  when: httpd_setup_enable | bool
+  when: nexus_httpd_setup_enable | bool
 
 - name: Configure nexus http proxy
   include_tasks: call_script.yml

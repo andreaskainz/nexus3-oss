@@ -13,7 +13,7 @@
   register: nexus_readlink_latest_call
   failed_when: false
   changed_when: false
-  check_mode: no
+  check_mode: false
 
 - name: "Purge Nexus"
   file:
@@ -24,9 +24,10 @@
     - "{{ nexus_readlink_latest_call.stdout | default(omit) }}"
     - "{{ nexus_restore_log }}"
     - "{{ nexus_installation_dir }}/nexus-latest"
+    - "/etc/systemd/system/{{ nexus_service }}"
     # - "{{ nexus_backup_dir }}" # Optional
 
 - name: "remove nexus package if present"
   package:
-    name: nexus
+    name: "{{ nexus_rpm_package_basename | default('nexus') }}"
     state: absent

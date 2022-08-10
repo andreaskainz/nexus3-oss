@@ -2,11 +2,11 @@
 - name: systemd-reload
   systemd:
     daemon-reload: yes
-    name: nexus.service
+    name: '{{ nexus_service }}'
 
 - name: nexus systemd service restart
   systemd:
-    name: nexus.service
+    name: '{{ nexus_service }}'
     state: restarted
     no_block: yes
   listen: nexus-service-restart
@@ -21,7 +21,7 @@
 
 - name: nexus systemd service stop
   systemd:
-    name: nexus.service
+    name: '{{ nexus_service }}'
     state: stopped
   listen: nexus-service-stop
   when: nexus_systemd_service_file.stat.exists

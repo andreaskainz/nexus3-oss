@@ -154,12 +154,12 @@ is not cleaned up automatically. If the package file does not persit, it will be
 ### Nexus port, context path and listening IP
 ```yaml
     nexus_default_port: 8081
-    nexus_application_host: '{{ httpd_setup_enable | ternary("127.0.0.1", "0.0.0.0") }}'
+    nexus_application_host: '{{ nexus_httpd_setup_enable | ternary("127.0.0.1", "0.0.0.0") }}'
     nexus_default_context_path: '/'
 ```
 
 Listening port/ip, and context path of the java nexus process.
-* the listening IP/Interface (i.e. `nexus_application_host`) is by default dependant on the `httpd_setup_enable` setting.
+* the listening IP/Interface (i.e. `nexus_application_host`) is by default dependant on the `nexus_httpd_setup_enable` setting.
 Nexus will listen only on localhost (127.0.0.1) if reverse proxy is enabled or all configured IP (0.0.0.0) if not. You
 can change this setting to your actual need (i.e. don't install proxy and still bind to 127.0.0.1 only if you install
 your own proxy)
@@ -268,39 +268,39 @@ The [Auditing capability of nexus](https://help.sonatype.com/repomanager3/securi
 
 ### Reverse proxy setup
 ```yaml
-    httpd_setup_enable: false
-    httpd_server_name: "{{ nexus_public_hostname }}"
-    httpd_default_admin_email: "admin@example.com"
-    httpd_ssl_certificate_file: 'files/nexus.vm.crt'
-    httpd_ssl_certificate_key_file: 'files/nexus.vm.key'
-    # httpd_ssl_certificate_chain_file: "{{ httpd_ssl_certificate_file }}"
-    httpd_copy_ssl_files: true
+    nexus_httpd_setup_enable: false
+    nexus_httpd_server_name: "{{ nexus_public_hostname }}"
+    nexus_httpd_default_admin_email: "admin@example.com"
+    nexus_httpd_ssl_certificate_file: 'files/nexus.vm.crt'
+    nexus_httpd_ssl_certificate_key_file: 'files/nexus.vm.key'
+    # httpd_ssl_certificate_chain_file: "{{ nexus_httpd_ssl_certificate_file }}"
+    nexus_httpd_copy_ssl_files: true
 ```
 
 Setup an [SSL Reverse-proxy](https://help.sonatype.com/display/NXRM3/Run+Behind+a+Reverse+Proxy#RunBehindaReverseProxy-Example:ReverseProxySSLTerminationatBasePath).
-This needs httpd installed. Note : when `httpd_setup_enable` is set to `true`, nexus binds by default to 127.0.0.1:8081
+This needs httpd installed. Note : when `nexus_httpd_setup_enable` is set to `true`, nexus binds by default to 127.0.0.1:8081
 thus *not* being directly accessible on HTTP port 8081 from an external IP. (If you want to change this, you can explicitely
 set `nexus_application_host: 0.0.0.0`)
 
 The default hostname used is `nexus_public_hostname`. If you need different names for whatever reason, you can set
-`httpd_server_name` to a different value.
+`nexus_httpd_server_name` to a different value.
 
-With `httpd_copy_ssl_files: true` (default), the above certs must exist in your playbook dir and will be copied to the server and configured in apache. `httpd_ssl_certificate_chain_file` is optional and must be left unset if you do not want to configure a chain file.
+With `nexus_httpd_copy_ssl_files: true` (default), the above certs must exist in your playbook dir and will be copied to the server and configured in apache. `httpd_ssl_certificate_chain_file` is optional and must be left unset if you do not want to configure a chain file.
 
-If you want to use existing certificates on the server, set `httpd_copy_ssl_files: false` and provide the following variables
+If you want to use existing certificates on the server, set `nexus_httpd_copy_ssl_files: false` and provide the following variables
 
 ```yaml
     # These specifies to the vhost where to find on the remote server file
     # system the certificate files.
-    httpd_ssl_cert_file_location: "/etc/pki/tls/certs/wildcard.vm.crt"
-    httpd_ssl_cert_key_location: "/etc/pki/tls/private/wildcard.vm.key"
-    # httpd_ssl_cert_chain_file_location: "{{ httpd_ssl_cert_file_location }}"
+    nexus_httpd_ssl_cert_file_location: "/etc/pki/tls/certs/wildcard.vm.crt"
+    nexus_httpd_ssl_cert_key_location: "/etc/pki/tls/private/wildcard.vm.key"
+    # nexus_httpd_ssl_cert_chain_file_location: "{{ nexus_httpd_ssl_cert_file_location }}"
 ```
 
-`httpd_ssl_cert_chain_file_location` is optional and must be left unset if you do not want to configure a chain file
+`nexus_httpd_ssl_cert_chain_file_location` is optional and must be left unset if you do not want to configure a chain file
 
 ```yaml
-    httpd_default_admin_email: "admin@example.com"
+    nexus_httpd_default_admin_email: "admin@example.com"
 ```
 
 Set httpd default admin email address
@@ -925,9 +925,9 @@ Feel free to use them or implement your own install scenario at your convenience
     nexus_timezone: 'Canada/Eastern'
     nexus_admin_password: "{{ vault_nexus_admin_password }}"
     nexus_public_hostname: 'nexus.vm'
-    httpd_setup_enable: true
-    httpd_ssl_certificate_file: "{{ vault_httpd_ssl_certificate_file }}"
-    httpd_ssl_certificate_key_file: "{{ vault_httpd_ssl_certificate_key_file }}"
+    nexus_httpd_setup_enable: true
+    nexus_httpd_ssl_certificate_file: "{{ vault_nexus_httpd_ssl_certificate_file }}"
+    nexus_httpd_ssl_certificate_key_file: "{{ vault_nexus_httpd_ssl_certificate_key_file }}"
     ldap_connections:
       - ldap_name: 'Company LDAP'
         ldap_protocol: 'ldaps'
