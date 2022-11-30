@@ -30,6 +30,9 @@ nexus_service: nexus.service
 nexus_min_heap_size: "2703M"
 nexus_max_heap_size: "{{ nexus_min_heap_size }}"
 nexus_max_direct_memory: "{{ nexus_min_heap_size }}"
+# The below list should not contain any setting related to the above memory setting
+# (aka -Xms -Xmx and -XX:MaxDirectMemorySize=)
+nexus_custom_jvm_settings: []
 
 # Nexus Backup
 nexus_backup_dir: '/var/nexus-backup'
@@ -85,6 +88,7 @@ nexus_api_scheme: http
 nexus_api_validate_certs: "{{ nexus_api_scheme == 'https' }}"
 nexus_api_context_path: "{{ nexus_default_context_path }}"
 nexus_api_port: "{{ nexus_default_port }}"
+nexus_api_timeout: 60
 
 # security realms
 nexus_nuget_api_key_realm: false
@@ -594,6 +598,7 @@ _nexus_repos_nuget_defaults:
   maximum_metadata_age: 1440  # Nexus gui default. For proxies only
   negative_cache_enabled: true  # Nexus gui default. For proxies only
   negative_cache_ttl: 1440  # Nexus gui default. For proxies only
+  nuget_version: v3  # Nexus gui default. For proxies only. One of v2 or v3
 
 nexus_repos_nuget_hosted:
   - name: nuget-internal

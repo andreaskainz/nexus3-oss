@@ -60,7 +60,7 @@
     - nuget-group
     - nuget-hosted
     - nuget.org-proxy
-  when: (nexus_data_dir_contents.stdout | length == 0) and nexus_delete_default_repos
+  when: (nexus_data_dir_contents.matched == 0) and nexus_delete_default_repos
 
 - name: Deleting default blobstore
   include_tasks: delete_blobstore_each.yml
@@ -72,7 +72,7 @@
       | list
       | unique
     }}
-  when: (nexus_data_dir_contents.stdout | length == 0) and nexus_delete_default_blobstore
+  when: (nexus_data_dir_contents.matched == 0) and nexus_delete_default_blobstore
 
 - block:
     - include_tasks: setup_ldap_each.yml
@@ -109,6 +109,8 @@
             recurse: "{{ nexus_blobstores_recurse_owner | default(false) | bool }}"
           when: item.path is defined
           loop: "{{ nexus_blobstores }}"
+          loop_control:
+            label: "blobstore: {{ item.name }} - type: {{ item.type | d('file') }} - path: {{ item.path | d('None') }}"
 
         - name: Create/Check blobstores
           include_tasks: call_script.yml
@@ -139,7 +141,7 @@
       include_tasks: call_script.yml
       vars:
         script_name: create_repos_from_list
-        args: "{{ _nexus_repos_global_list }}"
+        args: "{{ _nexus_repos_global_list | d([]) }}"
 
     - name: Create/check privileges
       include_tasks: call_script.yml

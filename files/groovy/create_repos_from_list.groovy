@@ -146,6 +146,13 @@ parsed_args.each { currentRepo ->
             }
         }
 
+        // Configs for nuget proxy repos
+        if (currentRepo.type == 'proxy' && currentRepo.format == 'nuget') {
+            configuration.attributes['nugetProxy'] = [
+                    nugetVersion: currentRepo.nuget_version.toUpperCase()
+            ]
+        }
+
         // Configs for docker proxy repos
         if (currentRepo.type == 'proxy' && currentRepo.format == 'docker') {
             configuration.attributes['dockerProxy'] = [
@@ -156,8 +163,8 @@ parsed_args.each { currentRepo ->
             ]
         }
 
-        // Configs for maven hosted/proxy repos
-        if (currentRepo.type in ['hosted', 'proxy'] && currentRepo.format == 'maven2') {
+        // Configs for all maven repos
+        if (currentRepo.format == 'maven2') {
             configuration.attributes['maven'] = [
                     versionPolicy: currentRepo.version_policy.toUpperCase(),
                     layoutPolicy : currentRepo.layout_policy.toUpperCase()
@@ -166,10 +173,12 @@ parsed_args.each { currentRepo ->
 
         // Configs for all docker repos
         if (currentRepo.format == 'docker') {
+            def dockerPort = currentRepo.get('http_port', '')
+            dockerPort = !(dockerPort instanceof String) ? dockerPort as String : dockerPort
             configuration.attributes['docker'] = [
                     forceBasicAuth: currentRepo.force_basic_auth,
                     v1Enabled     : currentRepo.v1_enabled,
-                    httpPort      : currentRepo.get('http_port', '')
+                    httpPort      : dockerPort?.isInteger() ? dockerPort.toInteger() : null
             ]
         }
 

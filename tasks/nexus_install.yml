@@ -81,6 +81,7 @@
     dest: "{{ nexus_download_dir }}/{{ nexus_package }}"
     force: no
     validate_certs: "{{ nexus_download_ssl_verify | default(omit) }}"
+  check_mode: no
   notify:
     - nexus-service-stop
 
@@ -221,7 +222,15 @@
   lineinfile:
     dest: "{{ nexus_installation_dir }}/nexus-latest/bin/nexus.vmoptions"
     regexp: "^-XX:LogFile=.*"
-    line: "-XX:LogFile={{ nexus_data_dir }}/log/jvm.log"
+    line: "-XX:LogFile={{ nexus_data_dir }}log/jvm.log"
+  notify:
+    - nexus-service-stop
+
+- name: Setup Karaf log directory
+  lineinfile:
+    dest: "{{ nexus_installation_dir }}/nexus-latest/bin/nexus.vmoptions"
+    regexp: "^-Dkaraf.log=.*"
+    line: "-Dkaraf.log={{ nexus_data_dir }}log"
   notify:
     - nexus-service-stop
 
@@ -252,6 +261,16 @@
     dest: "{{ nexus_installation_dir }}/nexus-latest/bin/nexus.vmoptions"
     regexp: "^-XX:MaxDirectMemorySize=.*"
     line: "-XX:MaxDirectMemorySize={{ nexus_max_direct_memory }}"
+  notify: nexus-service-stop
+
+- name: Setup additional and custom vm options if present (or remove them if none)
+  vars:
+    options: "{{ nexus_custom_jvm_settings | d([]) }}"
+  blockinfile:
+    path: "{{ nexus_installation_dir }}/nexus-latest/bin/nexus.vmoptions"
+    marker: "# {mark} - Custom nexus settings managed by ansible"
+    block: "-{{ options | join('\n-') }}"
+    state: "{{ 'present' if options | length > 0 else 'absent' }}"
   notify: nexus-service-stop
 
 - name: Stop the admin wizard from running
@@ -417,7 +436,13 @@
   when: nexus_backup_configure | bool
 
 - name: 'Check if data directory is empty (first-time install)'
-  command: "ls --ignore=lost+found {{ nexus_data_dir }}"
+  find:
+    paths:
+      - "{{ nexus_data_dir }}"
+    excludes:
+      - lost+found
+    recurse: no
+    file_type: any
   register: nexus_data_dir_contents
   check_mode: no
   changed_when: false
@@ -426,7 +451,7 @@
   file:
     path: "{{ nexus_data_dir }}/clean_cache"
     state: touch
-  when: nexus_latest_version.changed and nexus_data_dir_contents.stdout | length > 0
+  when: nexus_latest_version.changed and nexus_data_dir_contents.matched > 0
   tags:
     # hard to run as a handler for time being
     - skip_ansible_lint
@@ -454,6 +479,12 @@
     - wait-for-nexus-port
   when: "ansible_service_mgr != 'systemd'"
 
+- name: Install plugins from remote source
+  get_url:
+    url: "{{ item }}"
+    dest: "{{ nexus_installation_dir }}/nexus-{{ nexus_version }}/deploy/"
+  with_items: "{{ nexus_plugin_urls }}"
+
 - meta: flush_handlers
 
 - name: Chown configuration files from {{ nexus_installation_dir }}/nexus-latest/etc back to root
@@ -477,12 +508,6 @@
     mode: "0755"
     recurse: false
   with_items: "{{ nexus_app_dir_settings_dirs }}"
-
-- name: Install plugins from remote source
-  get_url:
-    url: "{{ item }}"
-    dest: "{{ nexus_installation_dir }}/nexus-{{ nexus_version }}/deploy/"
-  with_items: "{{ nexus_plugin_urls }}"
 
 - name: Access scripts API endpoint with defined admin password
   uri:
@@ -575,6 +600,7 @@
     path: "{{ role_path }}/files/groovy/*"
     dest: "/tmp/nexus-upload-groovy-scripts.tar.gz"
     mode: 0644
+  check_mode: no
   run_once: true
   delegate_to: localhost
 
@@ -591,18 +617,16 @@
 
 - block:
     - name: Sync new scripts to old and get differences
-      shell: >
-        set -o pipefail &&
-        rsync -ric {{ nexus_data_dir }}/groovy-raw-scripts/new/ {{ nexus_data_dir }}/groovy-raw-scripts/current/
-        | cut -d" " -f 2 | sed "s/\.groovy//g"
+      shell:
+        cmd: >
+          set -o pipefail &&
+          rsync -ric {{ nexus_data_dir }}/groovy-raw-scripts/new/ {{ nexus_data_dir }}/groovy-raw-scripts/current/
+          | cut -d" " -f 2 | sed "s/\.groovy//g"
+        executable: /bin/bash
       register: nexus_groovy_files_changed
       check_mode: no
       changed_when: false
-      # simple check on changed files kept on host
-      # skip ansible lint (we don't want to use synchronize module for this)
-      args:
-        warn: false
-        executable: /bin/bash
+
   rescue:
     - name: Fail with information on rsync error
       fail:
